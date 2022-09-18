@@ -23,23 +23,30 @@ func MultiplyCalculations(f1 Fraction, f2 Fraction) (Fraction, error) {
 	return f1, nil
 }
 
-func GCD(a, b int) int {
+func GCD(a, b int,c1 chan int) {
 	for b != 0 {
 		t := b
 		b = a % b
 		a = t
 	}
-	return a
+	c1 <- a 
 }
-func ReduceFraction(f1 Fraction) Fraction {
-	gcdValue := GCD(f1.Numerator, f1.Denominator)
+func ReduceFraction(f1 Fraction,mychnl chan Fraction) {
+	c1 := make(chan int)
+	go GCD(f1.Numerator, f1.Denominator,c1)
+	gcdValue := <- c1
 	f1.Numerator /= gcdValue
 	f1.Denominator /= gcdValue
-	return f1
+	mychnl <- f1
+	close(mychnl)
 }
 
 func ReduceToSimpleFraction(f1 Fraction, f2 Fraction) (Fraction, Fraction) {	
-	reducedFraction1 := ReduceFraction(f1)
-	reducedFraction2 := ReduceFraction(f2)
+	c1 := make(chan Fraction) 
+	c2 := make(chan Fraction) 
+	go ReduceFraction(f1,c1)
+	reducedFraction1 := <- c1
+	go ReduceFraction(f2,c2)
+	reducedFraction2 := <- c2
 	return reducedFraction1, reducedFraction2
 }
